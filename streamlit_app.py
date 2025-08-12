@@ -5,7 +5,7 @@ import time
 from urllib.parse import urljoin
 
 # ========== CONFIG ==========
-API_BASE = st.sidebar.text_input("Backend base URL", "http://127.0.0.1:8000/api")
+API_BASE = st.sidebar.text_input("Backend base URL", "https://hope-vault.onrender.com")
 USER_ID = st.sidebar.text_input("Demo user id", "demo-user")
 # ============================
 
@@ -148,3 +148,4 @@ if st.button("Generate audio"):
 
 st.markdown("---")
 st.caption("Tip: Use the sidebar to change backend URL if your FastAPI isn't on localhost.")
+
