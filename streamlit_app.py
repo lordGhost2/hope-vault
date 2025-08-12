@@ -104,11 +104,29 @@ captions = [
 
 if 'slide_idx' not in st.session_state:
     st.session_state['slide_idx'] = 0
+if 'slide_autorefresh_prev' not in st.session_state:
+    st.session_state['slide_autorefresh_prev'] = None
 
+# Auto-rotate control
+auto_rotate = st.checkbox('Auto-rotate slides', value=True, key='auto_rotate_slides')
+
+# If auto-rotate enabled, use st_autorefresh to tick every 5 seconds
+if auto_rotate:
+    slideshow_tick = st_autorefresh(interval=5000, limit=None, key='slideshow_autorefresh')
+    # when tick increments, advance slide index once
+    if st.session_state.get('slide_autorefresh_prev') is None:
+        st.session_state['slide_autorefresh_prev'] = slideshow_tick
+    elif slideshow_tick != st.session_state['slide_autorefresh_prev']:
+        st.session_state['slide_idx'] = (st.session_state.get('slide_idx', 0) + 1) % len(slides)
+        st.session_state['slide_autorefresh_prev'] = slideshow_tick
+
+# Render slideshow with manual controls
 l, m, r = st.columns([1,8,1])
 with l:
     if st.button('◀'):
         st.session_state['slide_idx'] = (st.session_state['slide_idx'] - 1) % len(slides)
+        # reset autorefresh counter to avoid immediate auto-advance
+        st.session_state['slide_autorefresh_prev'] = None
 with m:
     idx = st.session_state['slide_idx']
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -118,6 +136,7 @@ with m:
 with r:
     if st.button('▶'):
         st.session_state['slide_idx'] = (st.session_state['slide_idx'] + 1) % len(slides)
+        st.session_state['slide_autorefresh_prev'] = None
 
 st.markdown('---')
 
