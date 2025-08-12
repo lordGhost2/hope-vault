@@ -1,4 +1,4 @@
-```python
+
 import streamlit as st
 from datetime import datetime, timedelta
 import time
@@ -140,3 +140,4 @@ if datetime.now() - st.session_state.last_notification >= timedelta(minutes=30):
 # Note: Streamlit runs on each user interaction; for a background interval notification
 # that fires while user is idle you'd need browser-side JS or a separate service.
 ```
+
