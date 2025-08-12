@@ -5,7 +5,7 @@ import time
 from urllib.parse import urljoin
 
 # ========== CONFIG ==========
-API_BASE = st.sidebar.text_input("Backend base URL", "https://hope-vault.onrender.com")
+API_BASE = st.sidebar.text_input("Backend base URL", "http://127.0.0.1:8000/")
 USER_ID = st.sidebar.text_input("Demo user id", "demo-user")
 # ============================
 
