@@ -1,153 +1,191 @@
 import streamlit as st
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
-from streamlit_autorefresh import st_autorefresh
+import requests
 
-# Page config
 st.set_page_config(page_title="Hope Vault", layout="wide")
 
-# Inject CSS for styling and dark/light mode
+BACKEND_URL = "http://localhost:8000/api"  # Change if needed
+USER_ID = "user_123"
+
+def api_get(endpoint, params=None):
+    try:
+        r = requests.get(f"{BACKEND_URL}/{endpoint}", params=params, timeout=10)
+        return r.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+def api_post(endpoint, json=None):
+    try:
+        r = requests.post(f"{BACKEND_URL}/{endpoint}", json=json, timeout=20)
+        return r.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+# === CSS Styling same as before ===
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
-    html, body, [class*="css"] {
-        font-family: 'Poppins', sans-serif;
-    }
-    .title {
-        font-size: 3.5rem;
-        font-weight: 800;
-        background: linear-gradient(90deg, #8e2de2, #4a00e0);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        text-shadow: 0px 0px 15px rgba(142,45,226,0.4);
-        margin-bottom: 0;
-    }
-    .subtitle {
-        font-size: 1.2rem;
-        text-align: center;
-        opacity: 0.85;
-        margin-top: 0;
-        margin-bottom: 30px;
-    }
-    .stButton>button {
-        font-size: 1.1rem;
-        border-radius: 12px;
-        padding: 0.6em 1.2em;
-        background: linear-gradient(135deg, #8e2de2, #4a00e0);
-        color: white;
-        border: none;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-    .stButton>button:hover {
-        transform: scale(1.05);
-        box-shadow: 0px 4px 15px rgba(142,45,226,0.5);
-    }
-    .slide-caption {
-        font-size: 1.05rem;
-        text-align: center;
-        color: rgba(255,255,255,0.95);
-        padding-top: 8px;
-        user-select: none;
-    }
-    .slide-box {
-        border-radius: 12px; 
-        overflow: hidden; 
-        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        user-select: none;
-    }
-    @media (prefers-color-scheme: dark) {
-        body {
-            background: linear-gradient(135deg, #0f1724, #081226);
-            color: #f7f7fb;
-        }
-    }
-    @media (prefers-color-scheme: light) {
-        body {
-            background: linear-gradient(135deg, #fff6fb, #f0f7ff);
-            color: #0b1220;
-        }
-    }
-    img.fixed-image {
-        width: 100%;
-        height: 400px;
-        object-fit: cover;
-        border-radius: 12px;
-        user-select: none;
-    }
-    </style>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+html, body, [class*="css"] {
+    font-family: 'Poppins', sans-serif;
+}
+.title {
+    font-size: 3.8rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, #8e2de2, #4a00e0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    text-shadow: 0 0 15px rgba(142,45,226,0.5);
+    margin-bottom: 0.2rem;
+    user-select: none;
+}
+.subtitle {
+    font-size: 1.3rem;
+    text-align: center;
+    opacity: 0.85;
+    margin-bottom: 1.8rem;
+    user-select: none;
+}
+.stButton>button {
+    font-size: 1.1rem;
+    border-radius: 12px;
+    padding: 0.5em 1.2em;
+    background: linear-gradient(135deg, #8e2de2, #4a00e0);
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+}
+.stButton>button:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 18px rgba(142,45,226,0.5);
+}
+</style>
 """, unsafe_allow_html=True)
 
-# Title and subtitle
-st.markdown("<h1 class='title'>Hope Vault</h1>", unsafe_allow_html=True)
-st.markdown("<p class='subtitle'>Your secure place for inspiration & memories ✨</p>", unsafe_allow_html=True)
+# Title & Subtitle
+st.markdown("<div class='title'>Hope Vault</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Your secure place for inspiration & memories ✨</div>", unsafe_allow_html=True)
 
-# --- Image slideshow ---
-st.markdown("### Peaceful Moments — slide through for calmness")
-
-slides = [
-    "https://source.unsplash.com/1200x700/?pastel,landscape",
-    "https://source.unsplash.com/1200x700/?pastel,beach",
-    "https://source.unsplash.com/1200x700/?pastel,mountains",
-    "https://source.unsplash.com/1200x700/?pastel,sunrise",
-    "https://source.unsplash.com/1200x700/?calm,sea"
-]
-
-captions = [
-    "Breathe — gentle pastel horizons",
-    "Peaceful shorelines — let your thoughts settle",
-    "Quiet mountains — find stillness within",
-    "Soft sunrises — a fresh start always possible",
-    "Calm waters — reflection brings clarity"
-]
-
-if "slide_idx" not in st.session_state:
-    st.session_state.slide_idx = 0
-
-left_col, mid_col, right_col = st.columns([1,6,1])
-with left_col:
-    if st.button("◀"):
-        st.session_state.slide_idx = (st.session_state.slide_idx - 1) % len(slides)
-with mid_col:
-    idx = st.session_state.slide_idx
-    st.markdown(f"<div class='slide-box'>", unsafe_allow_html=True)
-    st.image(slides[idx], use_container_width=True, output_format="auto", caption=captions[idx], clamp=False)
-    st.markdown(f"</div>", unsafe_allow_html=True)
-with right_col:
-    if st.button("▶"):
-        st.session_state.slide_idx = (st.session_state.slide_idx + 1) % len(slides)
+# Date and Live Kolkata time
+tz = pytz.timezone("Asia/Kolkata")
+now = datetime.now(tz)
+st.markdown(f"### 📅 Today: {now.strftime('%Y-%m-%d')} | ⏰ Current time (Kolkata): {now.strftime('%H:%M:%S')}")
 
 st.markdown("---")
 
-# --- Calendar & live Kolkata clock ---
-col1, col2 = st.columns(2)
-with col1:
-    st.date_input("Today's Date", datetime.now().date())
-with col2:
-    # Autorefresh every second to update clock
-    st_autorefresh(interval=1000, limit=None, key="liveclock")
-    kolkata_tz = pytz.timezone("Asia/Kolkata")
-    now = datetime.now(kolkata_tz)
-    st.markdown(f"<h3 style='text-align:center;'>🕒 Asia/Kolkata Time: {now.strftime('%Y-%m-%d %H:%M:%S')}</h3>", unsafe_allow_html=True)
+# Choose panel
+panel = st.radio("Choose Section", ["Add Memory", "Your Vault & Story", "Translate & Text-to-Speech"], horizontal=True)
 
-st.markdown("---")
+if panel == "Add Memory":
+    with st.form("add_memory"):
+        st.subheader("Add a memory (daily prompt)")
+        with st.expander("Get a prompt from backend"):
+            prompt_resp = api_get("prompt", params={"lang": "en"})
+            if "prompt" in prompt_resp:
+                st.info(prompt_resp["prompt"])
+            else:
+                st.warning("Could not fetch prompt. Backend URL okay?")
+        text = st.text_area("Write a short memory:", value="", height=120)
+        lang = st.selectbox("Language code", options=["en", "hi", "bn", "ta"], index=0)
+        submitted = st.form_submit_button("Save memory")
+        if submitted:
+            if not text.strip():
+                st.warning("Please write a short memory first.")
+            else:
+                payload = {"user_id": USER_ID, "text": text.strip(), "language": lang}
+                res = api_post("entry", json=payload)
+                if res.get("status") == "saved":
+                    st.success("Memory saved ✅")
+                else:
+                    st.error(f"Save failed: {res}")
 
-# --- Thoughts input area ---
-st.subheader("📝 Your Thoughts")
-thought = st.text_area("Write something inspiring...")
+elif panel == "Your Vault & Story":
+    st.subheader("Your Hope Vault")
+    if st.button("Refresh vault"):
+        pass
 
-if st.button("Save to Vault"):
-    if thought.strip():
-        st.success(f"Saved on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ✅")
+    vault = api_get("vault", params={"user_id": USER_ID})
+    if vault.get("entries") is None:
+        st.error("Unable to fetch vault. Is backend running and CORS allowed?")
     else:
-        st.error("Please write something before saving.")
+        entries = vault.get("entries", [])
+        if not entries:
+            st.info("No memories yet. Add one in the 'Add Memory' tab.")
+        else:
+            for e in entries[::-1]:
+                ts = e.get("timestamp", "")[:19]
+                st.markdown(f"**{ts}** — {e.get('text')}")
 
-# --- Motivational message every 30 minutes ---
-if "last_notification" not in st.session_state:
-    st.session_state.last_notification = datetime.now()
+    st.markdown("---")
 
-if datetime.now() - st.session_state.last_notification >= timedelta(minutes=30):
-    st.balloons()
-    st.info("💡 Take a moment to write something inspiring in your Hope Vault!")
-    st.session_state.last_notification = datetime.now()
+    st.subheader("Generate uplifting story")
+    with st.form("gen_story"):
+        theme = st.text_input("Theme (e.g., perseverance, hope)", value="perseverance")
+        gen_lang = st.selectbox("Story language code", options=["en", "hi", "bn", "ta"], index=0)
+        max_len = st.slider("Max length (tokens)", min_value=80, max_value=400, value=200)
+        gen_submit = st.form_submit_button("Generate story")
+        if gen_submit:
+            with st.spinner("Generating story..."):
+                payload = {"user_id": USER_ID, "theme": theme, "language": gen_lang, "max_length": max_len}
+                res = api_post("generate_story", json=payload)
+                if res.get("error"):
+                    st.error("Generation failed: " + str(res.get("error")))
+                    st.write(res)
+                else:
+                    story = res.get("story", {}).get("text") or (res.get("story") and res["story"].get("text"))
+                    if not story:
+                        story = res.get("story") if isinstance(res.get("story"), str) else None
+                    if story:
+                        st.success("Story generated ✅")
+                        st.text_area("Generated Story (editable)", value=story, height=260, key="generated_story_text")
+                    else:
+                        st.error("No story text found in response. Response:")
+                        st.write(res)
+
+else:  # Translate & TTS
+    st.subheader("Translate & Text-to-Speech")
+    st.write("If you want the story in another language, first copy the story above -> Translate -> TTS")
+
+    translated_text = None
+    if st.button("Translate last story to Hindi"):
+        story_text = st.session_state.get("generated_story_text", "")
+        if not story_text:
+            st.warning("Generate a story first.")
+        else:
+            with st.spinner("Translating..."):
+                res = api_post("translate", json={"text": story_text, "target_lang": "hi"})
+                if res.get("translatedText"):
+                    translated_text = res["translatedText"]
+                    st.session_state["translated_text"] = translated_text
+                    st.success("Translated ✅")
+                else:
+                    st.error("Translate failed: " + str(res))
+
+    if st.session_state.get("translated_text"):
+        st.text_area("Translated story", value=st.session_state["translated_text"], height=260, key="translated_box")
+
+    st.markdown("**Text-to-Speech**")
+    tts_text = st.text_area("Text to speak (edit or paste story here)", 
+                           value=st.session_state.get("translated_text") or st.session_state.get("generated_story_text",""),
+                           height=200, key="tts_text")
+    tts_lang = st.selectbox("TTS language code (gTTS):", options=["en","hi","bn","ta"], index=0)
+    slow = st.checkbox("Slow voice", value=False)
+    if st.button("Generate audio"):
+        if not tts_text.strip():
+            st.warning("Provide text to convert to speech.")
+        else:
+            with st.spinner("Generating audio..."):
+                res = api_post("text_to_speech", json={"text": tts_text, "language": tts_lang, "slow": slow})
+                if res.get("error"):
+                    st.error("TTS failed: " + str(res))
+                else:
+                    public = res.get("public_url") or res.get("audio_file")
+                    st.success("Audio ready")
+                    st.write("Public URL:", public)
+                    try:
+                        st.audio(public)
+                    except Exception:
+                        st.info("If stream fails, open the public URL in a new tab to play the file.")
